@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Heart, User, ShoppingBag, Menu, X } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, X, LogOut, LayoutDashboard, User } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
 
 const nav = [
   { label: "New", href: "/shop" },
@@ -18,10 +20,13 @@ const nav = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const overHero = pathname === "/";
   const { items } = useCartStore();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
+  const { user, isAdmin, signOut } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -30,7 +35,30 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('#user-menu-container')) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [userMenuOpen]);
+
   const dark = overHero && !scrolled;
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUserMenuOpen(false);
+    router.push('/');
+  };
+
+  // Get display name from phone number
+  const userInitial = user?.phoneNumber
+    ? user.phoneNumber.slice(-2)
+    : user?.email?.charAt(0).toUpperCase() ?? 'U';
 
   return (
     <header
@@ -76,9 +104,57 @@ export function Navbar() {
           <Link href="/dashboard/wishlist" aria-label="Wishlist" className="hidden md:block">
             <Heart className="h-[18px] w-[18px]" />
           </Link>
-          <Link href="/dashboard" aria-label="Account" className="hidden md:block">
-            <User className="h-[18px] w-[18px]" />
-          </Link>
+
+          {/* Auth-aware user button */}
+          {user ? (
+            <div id="user-menu-container" className="relative hidden md:block">
+              <button
+                onClick={() => setUserMenuOpen(v => !v)}
+                aria-label="Account"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-gold text-ink text-xs font-semibold hover:scale-105 transition-transform"
+              >
+                {userInitial}
+              </button>
+
+              {userMenuOpen && (
+                <div className={`absolute right-0 top-12 w-52 border shadow-xl z-50 ${dark && !scrolled ? 'bg-ink border-cream/20 text-cream' : 'bg-background border-border text-foreground'}`}>
+                  <div className="px-4 py-3 border-b border-current/10">
+                    <p className="eyebrow text-current/40 mb-1">Signed in as</p>
+                    <p className="text-sm font-mono truncate">{user.phoneNumber || user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-current/5 transition-colors"
+                    >
+                      <LayoutDashboard size={15} /> My Orders
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gold hover:bg-current/5 transition-colors"
+                      >
+                        <User size={15} /> Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-current/5 transition-colors"
+                    >
+                      <LogOut size={15} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/login" aria-label="Sign In" className="hidden md:block">
+              <User className="h-[18px] w-[18px]" />
+            </Link>
+          )}
+
           <Link href="/checkout" aria-label="Bag" className="relative">
             <ShoppingBag className="h-[18px] w-[18px]" />
             {cartCount > 0 && (
@@ -116,6 +192,17 @@ export function Navbar() {
             </Link>
           ))}
           <div className="border-t border-border/60 my-6" />
+          {user ? (
+            <>
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="eyebrow opacity-70">My Orders</Link>
+              {isAdmin && (
+                <Link href="/admin" onClick={() => setOpen(false)} className="eyebrow text-gold">Admin Panel</Link>
+              )}
+              <button onClick={handleSignOut} className="eyebrow text-red-500 text-left">Sign Out</button>
+            </>
+          ) : (
+            <Link href="/login" onClick={() => setOpen(false)} className="eyebrow opacity-70">Sign In</Link>
+          )}
           <span className="eyebrow opacity-60">EN · EUR</span>
         </div>
       </div>

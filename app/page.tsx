@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { ProductCard } from '@/components/product/ProductCard';
-import { getProducts } from '@/lib/firebase-db';
+import { getProducts, getCategories, getTestimonials } from '@/lib/firebase-db';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import type { Product } from '@/types';
+import type { Product, Category, Testimonial } from '@/types';
 
 interface HomepageContent {
   heroImage: string;
@@ -24,17 +24,33 @@ const defaultContent: HomepageContent = {
   featuredSplitImage: '/bag-1.jpg',
 };
 
+const DEFAULT_CATEGORIES = [
+  { id: '1', name: "Shoes", description: "Twelve silhouettes. One heel language.", image: "/shoe-1.jpg", slug: 'shoes', gender: 'all' as const, productCount: 0, featured: true },
+  { id: '2', name: "Bags", description: "Nine editions. Hand-numbered.", image: "/bag-1.jpg", slug: 'bags', gender: 'all' as const, productCount: 0, featured: true },
+  { id: '3', name: "Voyage", description: "For miles that deserve better.", image: "/shoe-3.jpg", slug: 'voyage', gender: 'all' as const, productCount: 0, featured: true },
+];
+
+const DEFAULT_TESTIMONIALS = [
+  { id: '1', name: 'Vogue Paris', location: 'Paris', avatar: '', rating: 5, text: 'The most quietly powerful shoe I own.', date: '', verified: true },
+  { id: '2', name: 'The Business of Fashion', location: 'London', avatar: '', rating: 5, text: 'A house that measures time in decades, not seasons.', date: '', verified: true },
+  { id: '3', name: 'T Magazine', location: 'New York', avatar: '', rating: 5, text: 'Every stitch is a whisper. Nothing shouts.', date: '', verified: true },
+];
+
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [content, setContent] = useState<HomepageContent>(defaultContent);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [fetchedProducts, docSnap] = await Promise.all([
+        const [fetchedProducts, docSnap, fetchedCats, fetchedTestimonials] = await Promise.all([
           getProducts(),
-          getDoc(doc(db, 'site_content', 'homepage'))
+          getDoc(doc(db, 'site_content', 'homepage')),
+          getCategories(),
+          getTestimonials(),
         ]);
         
         setProducts(fetchedProducts);
@@ -42,6 +58,8 @@ export default function HomePage() {
         if (docSnap.exists()) {
           setContent(docSnap.data() as HomepageContent);
         }
+        if (fetchedCats.length > 0) setCategories(fetchedCats);
+        if (fetchedTestimonials.length > 0) setTestimonials(fetchedTestimonials);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -58,11 +76,11 @@ export default function HomePage() {
       <MarqueeWords />
       <FeaturedSplit image={content.featuredSplitImage} />
       <BestSellers products={products} loading={loading} />
-      <Categories />
+      <Categories categories={categories} />
       <EditorialStory />
       <Timeline />
       <Campaign bagsImage={content.campaignBagsImage} shoesImage={content.campaignShoesImage} />
-      <Testimonials />
+      <Testimonials testimonials={testimonials} />
       <Instagram />
       <Newsletter />
     </>
@@ -280,12 +298,7 @@ function BestSellers({ products, loading }: { products: Product[], loading: bool
 }
 
 /* ---------- CATEGORIES ---------- */
-function Categories() {
-  const cats = [
-    { name: "Shoes", copy: "Twelve silhouettes. One heel language.", img: "/shoe-1.jpg", to: "/shop" },
-    { name: "Bags", copy: "Nine editions. Hand-numbered.", img: "/bag-1.jpg", to: "/shop" },
-    { name: "Voyage", copy: "For miles that deserve better.", img: "/shoe-3.jpg", to: "/shop" },
-  ];
+function Categories({ categories }: { categories: Category[] }) {
   return (
     <section className="mx-auto max-w-[1600px] px-6 md:px-12 py-24 md:py-36">
       <div className="text-center mb-16">
@@ -293,15 +306,15 @@ function Categories() {
         <h2 className="mt-4 font-display text-5xl md:text-7xl">Explore by category</h2>
       </div>
       <div className="grid gap-6 md:grid-cols-3">
-        {cats.map((c, i) => (
+        {categories.slice(0, 3).map((c, i) => (
           <Link
-            key={c.name}
-            href={c.to}
+            key={c.id}
+            href={`/shop?category=${c.slug}`}
             className="group relative aspect-[4/5] overflow-hidden bg-bone cr-reveal"
             style={{ animationDelay: `${i * 120}ms` }}
           >
             <img
-              src={c.img}
+              src={c.image}
               alt={c.name}
               loading="lazy"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] group-hover:scale-[1.06]"
@@ -310,7 +323,7 @@ function Categories() {
             <div className="absolute inset-x-0 bottom-0 p-8 text-cream">
               <div className="eyebrow text-cream/70">Category</div>
               <div className="mt-3 font-display text-4xl md:text-5xl">{c.name}</div>
-              <div className="mt-2 text-sm text-cream/80">{c.copy}</div>
+              <div className="mt-2 text-sm text-cream/80">{c.description}</div>
               <div className="mt-6 inline-flex items-center gap-2 eyebrow">
                 Discover <ArrowRight className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" />
               </div>
@@ -410,19 +423,14 @@ function Campaign({ bagsImage, shoesImage }: { bagsImage: string, shoesImage: st
 }
 
 /* ---------- TESTIMONIALS ---------- */
-function Testimonials() {
-  const quotes = [
-    { q: "The most quietly powerful shoe I own.", a: "Vogue Paris" },
-    { q: "A house that measures time in decades, not seasons.", a: "The Business of Fashion" },
-    { q: "Every stitch is a whisper. Nothing shouts.", a: "T Magazine" },
-  ];
+function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
   return (
     <section className="bg-ink text-cream">
       <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-24 md:py-36 grid gap-14 md:grid-cols-3">
-        {quotes.map((q, i) => (
-          <figure key={i} className="cr-reveal" style={{ animationDelay: `${i * 120}ms` }}>
-            <div className="font-serif text-2xl md:text-3xl italic leading-snug">&quot;{q.q}&quot; </div>
-            <figcaption className="mt-8 eyebrow text-cream/60">— {q.a}</figcaption>
+        {testimonials.slice(0, 3).map((t, i) => (
+          <figure key={t.id} className="cr-reveal" style={{ animationDelay: `${i * 120}ms` }}>
+            <div className="font-serif text-2xl md:text-3xl italic leading-snug">&quot;{t.text}&quot;</div>
+            <figcaption className="mt-8 eyebrow text-cream/60">— {t.name}</figcaption>
           </figure>
         ))}
       </div>

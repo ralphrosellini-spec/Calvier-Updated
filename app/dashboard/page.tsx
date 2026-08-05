@@ -1,19 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Package, Heart, MapPin, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { getOrders } from '@/lib/firebase-db';
+import { getOrdersByUserId } from '@/lib/firebase-db';
 import type { Order } from '@/types';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 
 export default function DashboardOverview() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    getOrders().then(data => {
+    if (!authLoading && !user) {
+      router.push('/login?redirect=/dashboard');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    getOrdersByUserId(user.uid).then(data => {
       // Sort orders by date descending
       const sorted = [...data].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -24,7 +36,7 @@ export default function DashboardOverview() {
       console.error("Failed to fetch orders", error);
       setLoading(false);
     });
-  }, []);
+  }, [user]);
 
   const recentOrders = orders.slice(0, 2);
 
@@ -35,7 +47,11 @@ export default function DashboardOverview() {
     { label: 'Payment Methods', value: '1', icon: CreditCard, href: '/dashboard/settings' },
   ];
 
-  if (loading) {
+  const displayName = user?.phoneNumber
+    ? user.phoneNumber
+    : user?.displayName ?? user?.email ?? 'there';
+
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-8 h-8 border-2 border-cr-gold border-t-transparent rounded-full animate-spin"></div>
@@ -46,7 +62,7 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="font-serif text-3xl sm:text-4xl font-light text-white mb-4">Welcome back, Sophia</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl font-light text-white mb-4">Welcome back{displayName !== 'there' ? `, ${displayName}` : ''}</h1>
         <p className="text-white/50 text-sm">Manage your orders, update your profile, and curate your wishlist.</p>
       </div>
 

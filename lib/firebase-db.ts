@@ -1,9 +1,12 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, query, where, limit, onSnapshot } from 'firebase/firestore';
+import {
+  collection, getDocs, doc, getDoc, query, where, limit, onSnapshot,
+  addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
+} from 'firebase/firestore';
 import type { Product, Collection, Category, Order, Testimonial } from '@/types';
 
 // ==========================================
-// PRODUCTS
+// PRODUCTS — READ
 // ==========================================
 
 export async function getProducts(): Promise<Product[]> {
@@ -14,9 +17,7 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductById(id: string): Promise<Product | null> {
   const docRef = doc(db, 'products', id);
   const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as Product;
-  }
+  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as Product;
   return null;
 }
 
@@ -49,7 +50,29 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 }
 
 // ==========================================
-// COLLECTIONS
+// PRODUCTS — WRITE
+// ==========================================
+
+export async function addProduct(data: Omit<Product, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'products'), {
+    ...data,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  return ref.id;
+}
+
+export async function updateProduct(id: string, data: Partial<Product>): Promise<void> {
+  const productRef = doc(db, 'products', id);
+  await updateDoc(productRef, { ...data, updatedAt: new Date().toISOString() });
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'products', id));
+}
+
+// ==========================================
+// COLLECTIONS — READ
 // ==========================================
 
 export async function getCollections(): Promise<Collection[]> {
@@ -68,7 +91,7 @@ export async function getCollectionBySlug(slug: string): Promise<Collection | nu
 }
 
 // ==========================================
-// CATEGORIES
+// CATEGORIES — READ
 // ==========================================
 
 export async function getCategories(): Promise<Category[]> {
@@ -77,7 +100,7 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 // ==========================================
-// TESTIMONIALS
+// TESTIMONIALS — READ
 // ==========================================
 
 export async function getTestimonials(): Promise<Testimonial[]> {
@@ -86,7 +109,20 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 }
 
 // ==========================================
-// ORDERS
+// TESTIMONIALS — WRITE
+// ==========================================
+
+export async function addTestimonial(data: Omit<Testimonial, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'testimonials'), data);
+  return ref.id;
+}
+
+export async function deleteTestimonial(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'testimonials', id));
+}
+
+// ==========================================
+// ORDERS — READ
 // ==========================================
 
 export async function getOrders(): Promise<Order[]> {
@@ -106,4 +142,61 @@ export function subscribeToOrders(callback: (orders: Order[]) => void) {
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
     callback(orders);
   });
+}
+
+// ==========================================
+// ORDERS — WRITE
+// ==========================================
+
+export async function createOrder(data: Omit<Order, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'orders'), {
+    ...data,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  return ref.id;
+}
+
+export async function updateOrderStatus(id: string, status: Order['status']): Promise<void> {
+  await updateDoc(doc(db, 'orders', id), {
+    status,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+// ==========================================
+// SITE CONTENT
+// ==========================================
+
+export async function getSiteContent(docId: string): Promise<Record<string, unknown> | null> {
+  const docRef = doc(db, 'site_content', docId);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) return docSnap.data() as Record<string, unknown>;
+  return null;
+}
+
+export async function setSiteContent(docId: string, data: Record<string, unknown>): Promise<void> {
+  await setDoc(doc(db, 'site_content', docId), data);
+}
+
+// ==========================================
+// USER PROFILE
+// ==========================================
+
+export async function getUserProfile(uid: string): Promise<Record<string, unknown> | null> {
+  const docRef = doc(db, 'users', uid);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) return docSnap.data() as Record<string, unknown>;
+  return null;
+}
+
+export async function createOrUpdateUserProfile(
+  uid: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  await setDoc(
+    doc(db, 'users', uid),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
 }

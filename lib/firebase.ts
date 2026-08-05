@@ -20,6 +20,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// Bypass reCAPTCHA on localhost to avoid Google Cloud security blocks
+if (process.env.NODE_ENV === 'development') {
+  auth.settings.appVerificationDisabledForTesting = true;
+}
+
 // Analytics only run on client
 let analytics;
 if (typeof window !== "undefined") {

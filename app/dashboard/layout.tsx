@@ -1,12 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, ShoppingBag, Heart, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/');
+  };
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -45,7 +53,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </nav>
               
               <div className="mt-8 pt-8 border-t border-white/10">
-                <button className="flex items-center gap-4 px-4 py-3 text-[11px] tracking-[0.2em] uppercase text-white/40 hover:text-white hover:bg-white/5 transition-colors w-full text-left">
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-4 px-4 py-3 text-[11px] tracking-[0.2em] uppercase text-white/40 hover:text-white hover:bg-white/5 transition-colors w-full text-left"
+                >
                   <LogOut size={16} />
                   Sign Out
                 </button>
