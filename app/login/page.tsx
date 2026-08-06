@@ -85,7 +85,7 @@ function LoginContent() {
       // Initialize reCAPTCHA on demand if it doesn't exist
       if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible'
+          size: 'normal' // changed to normal to show potential domain errors on the widget
         });
         // WAIT for recaptcha to initialize to avoid "Enterprise config" race conditions
         await window.recaptchaVerifier.render();

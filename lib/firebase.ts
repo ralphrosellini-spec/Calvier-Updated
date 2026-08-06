@@ -5,13 +5,13 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDRe0KkregHpo-6O41cQ64Twg9-d1ahRRo",
-  authDomain: "calvier-rossel.firebaseapp.com",
-  projectId: "calvier-rossel",
-  storageBucket: "calvier-rossel.firebasestorage.app",
-  messagingSenderId: "256735305614",
-  appId: "1:256735305614:web:3ec284cc31e1ea57a78edf",
-  measurementId: "G-5KN1VTK9E6"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
@@ -20,10 +20,10 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Bypass reCAPTCHA on localhost to avoid Google Cloud security blocks
-if (process.env.NODE_ENV === 'development') {
-  auth.settings.appVerificationDisabledForTesting = true;
-}
+// App verification is enabled for real SMS sending
+// if (process.env.NODE_ENV === 'development') {
+//   auth.settings.appVerificationDisabledForTesting = true;
+// }
 
 // Analytics only run on client
 let analytics;
