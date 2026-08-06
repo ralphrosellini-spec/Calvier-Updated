@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -49,18 +50,18 @@ export function AdminGuard({ children }: AdminGuardProps) {
         </div>
         
         <div className="mt-4 flex flex-col gap-4">
-          <a
+          <Link
             href="/admin/login"
             className="bg-[#c9a96e] text-[#080808] px-8 py-3 text-[11px] tracking-[0.25em] uppercase font-semibold hover:bg-white transition-colors"
           >
             Sign In as Admin
-          </a>
-          <a
+          </Link>
+          <Link
             href="/"
             className="text-[11px] tracking-[0.2em] uppercase text-white/40 hover:text-white transition-colors"
           >
             ← Return to store
-          </a>
+          </Link>
         </div>
       </div>
     );

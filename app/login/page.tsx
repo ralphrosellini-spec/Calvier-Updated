@@ -192,7 +192,7 @@ function LoginContent() {
         </div>
         <div className="relative z-10">
           <p className="font-display italic text-5xl leading-tight text-cream/90">
-            "Quiet luxury<br />begins with<br />knowing who you are."
+            &quot;Quiet luxury<br />begins with<br />knowing who you are.&quot;
           </p>
           <p className="eyebrow text-cream/40 mt-6">— The Atelier Journal</p>
         </div>
