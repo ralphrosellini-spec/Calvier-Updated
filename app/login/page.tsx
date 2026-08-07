@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -39,11 +38,12 @@ function LoginContent() {
       
       await signInWithPopup(auth, provider);
       // Success! The useEffect will automatically catch the user state change and redirect.
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
       console.error('[Google Sign-In Error]:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (error.code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/unauthorized-domain') {
+      } else if (error.code === 'auth/unauthorized-domain') {
         setError('Domain not authorized. Please add localhost to Firebase Auth authorized domains.');
       } else {
         setError('Failed to sign in with Google. Please try again.');
