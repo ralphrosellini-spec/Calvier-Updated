@@ -63,12 +63,12 @@ service cloud.firestore {
     }
 
     // ── Orders ───────────────────────────────────────────────
-    // Logged-in users can read/write their own orders;
-    // Admins can read/write all orders
+    // Logged-in users can read their own orders and create orders for themselves.
+    // Only admins can update or delete orders (change status, etc).
     match /orders/{orderId} {
       allow read: if isAdmin() || (isLoggedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isLoggedIn();
-      allow update: if isAdmin() || (isLoggedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -85,6 +85,13 @@ service cloud.firestore {
     match /admins/{uid} {
       allow read: if isLoggedIn() && request.auth.uid == uid;
       allow write: if false; // ONLY set manually via Firebase Console
+    }
+
+    // ── OTP Sessions (server-only via Admin SDK) ──────────────────────────────
+    // This collection is written/read ONLY by the server using Firebase Admin SDK.
+    // Admin SDK bypasses these rules — this deny rule is just a safety net.
+    match /_otp_sessions/{phone} {
+      allow read, write: if false;
     }
 
   }

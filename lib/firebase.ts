@@ -20,10 +20,6 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// App verification is enabled for real SMS sending
-// if (process.env.NODE_ENV === 'development') {
-//   auth.settings.appVerificationDisabledForTesting = true;
-// }
 
 // Analytics only run on client
 let analytics;
